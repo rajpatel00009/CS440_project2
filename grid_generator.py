@@ -1,6 +1,6 @@
 import random
 
-GRID_SIZE = inN
+GRID_SIZE = 10 
 
 # intial grid with all open cells
 grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
