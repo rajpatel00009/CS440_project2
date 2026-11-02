@@ -1,5 +1,5 @@
 import random
-from turtle import distance
+import math
 
 GRID_SIZE = 10
 
@@ -12,8 +12,26 @@ TOTAL_COST = 0
 possible_cells = []
 impossible_cells = []
 
+cells_to_probs = {
+    (i, j): 1/(GRID_SIZE)
+    for i in range(GRID_SIZE)
+    for j in range(GRID_SIZE)
+}
 
-def type1_detactor(curr_locator_bot):
+def distance_between_cells(cell1, cell2):
+    r1, c1 = cell1
+    r2, c2 = cell2
+
+    return abs(r2 - r1) + abs(c2 - c1)
+
+def euclidean_distance(cell1, cell2):
+    r1, c1 = cell1
+    r2, c2 = cell2
+
+    return math.sqrt((r2 - r1)^2 + (c2 - c1)^2)
+
+# this detector will ping when the bot we are looking for is in radius of K 
+def type1_detector(curr_locator_bot):
     global COST
     global TOTAL_COST
     cells = []
@@ -40,13 +58,28 @@ def type1_detactor(curr_locator_bot):
             return (1, cells)
     
     return (-1, cells)
-                
 
-def distance_between_cells(cell1, cell2):
-    r1, c1 = cell1
-    r2, c2 = cell2
+def count_probability(curr_cell):
+    temp_dict = {}
 
-    return abs(r2 - r1) + abs(c2 - c1)
+    c1, r1 = curr_cell
+    for cell in cells_to_probs.values():
+        dis = euclidean_distance(cell, init_lost_bot)
+        raj = math.exp((0 - A)*(dis - 1))
+        temp_dict[cell] = raj
+        
+
+
+
+
+
+def type2_probability(curr_cell):
+
+
+
+# this detector will ping with high prob. when the losted bot iis near by, 
+def type2_detector(curr_locator_bot):
+
 
 # intial grid with all open cells
 grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
@@ -66,7 +99,7 @@ possible_cells = [
     for i in range(GRID_SIZE)
     for j in range(GRID_SIZE)
 ]
-ping = type1_detactor(init_locator_bot)
+ping = type1_detector(init_locator_bot)
 
 while (ping[0] != 0):
     
@@ -98,7 +131,7 @@ while (ping[0] != 0):
         TOTAL_COST += COST * dist
         init_locator_bot = picked
 
-        ping = type1_detactor(picked)
+        ping = type1_detector(picked)
         
     else:
         print('not in range')
@@ -125,7 +158,7 @@ while (ping[0] != 0):
         TOTAL_COST += COST * dist
         init_locator_bot = picked
         
-        ping = type1_detactor(picked)
+        ping = type1_detector(picked)
 
 print("we won")
 print(TOTAL_COST)
@@ -136,9 +169,7 @@ for i in range(GRID_SIZE):
 
 
 
-# def euclidean_dis(cell1, cell2):
    
-# def type_a_ping():
     
 
 
