@@ -62,6 +62,9 @@ def type1_detector(curr_locator_bot):
 def count_probability(curr_cell, result):
 
     for cell in cells_to_probs:
+        if cell == curr_cell:
+            cells_to_probs[cell] = 0
+            continue
         dis = euclidean_distance(cell, curr_cell)
         ping_prob = math.exp((0 - A)*(dis - 1))
         if result == "PING":
@@ -70,7 +73,7 @@ def count_probability(curr_cell, result):
             likelihood = 1 - ping_prob
 
             
-        cells_to_probs[cell] = likelihood
+        cells_to_probs[cell] *= likelihood
         
     total = sum(cells_to_probs.values())
 
@@ -174,12 +177,6 @@ print(cells_to_probs.values())
 
 for i in range(GRID_SIZE):
     print(grid[i])
-
-
-
-
-   
-    
 
 
 # for the type one if k is 10 look in radius of 10 from current cell and if the device pings mark all cells in radius 10 possible. The move to nearest cell if multiple select random. Once you see any cell does not ping mark all the cells in radius impossible. If you move to next cell and cell pings mark the previous possible cells as impossible as losed bot is now in new radius.
