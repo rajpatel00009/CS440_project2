@@ -1,17 +1,24 @@
 import random
+from turtle import distance
 
 GRID_SIZE = 10
 
 K = 5 # radius for type a
 A = 2 # alpha value for type b
+COST = 2 # cost per step
+TOTAL_COST = 0
+
 
 possible_cells = []
 impossible_cells = []
 
 
 def type1_detactor(curr_locator_bot):
+    global COST
+    global TOTAL_COST
     cells = []
     r, c = curr_locator_bot
+    TOTAL_COST += COST * 0.5
 
     if(curr_locator_bot == init_lost_bot):
         return (0, [])
@@ -31,8 +38,16 @@ def type1_detactor(curr_locator_bot):
         r1, c1 = cell
         if(grid[r1][c1] == 'l'):
             return (1, cells)
+    
     return (-1, cells)
                 
+
+def distance_between_cells(cell1, cell2):
+    r1, c1 = cell1
+    r2, c2 = cell2
+
+    return abs(r2 - r1) + abs(c2 - c1)
+
 # intial grid with all open cells
 grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
 
@@ -54,7 +69,9 @@ possible_cells = [
 ping = type1_detactor(init_locator_bot)
 
 while (ping[0] != 0):
-
+    
+    if init_locator_bot in possible_cells:
+        possible_cells.remove(init_locator_bot)
     if(ping[0] == 1):
         print('in range')
         possible_cells_2 = ping[1]
@@ -64,8 +81,23 @@ while (ping[0] != 0):
             print("No possible cells left")
             break
 
-        picked = random.choice(possible_cells)
+
+        min_dist = min(distance_between_cells(init_locator_bot, cell)
+            for cell in possible_cells
+        )
+
+        nearest_cells = [cell for cell in possible_cells
+            if distance_between_cells(init_locator_bot, cell) == min_dist
+        ]
+
+        picked = random.choice(nearest_cells)
+
+
         possible_cells.remove(picked)
+        dist = distance_between_cells(init_locator_bot, picked)
+        TOTAL_COST += COST * dist
+        init_locator_bot = picked
+
         ping = type1_detactor(picked)
         
     else:
@@ -77,12 +109,26 @@ while (ping[0] != 0):
             break
 
 
-        picked = random.choice(possible_cells)
+        min_dist = min(distance_between_cells(init_locator_bot, cell)
+            for cell in possible_cells
+        )
+
+        nearest_cells = [cell for cell in possible_cells
+            if distance_between_cells(init_locator_bot, cell) == min_dist
+        ]
+
+        picked = random.choice(nearest_cells)
+
         possible_cells.remove(picked)
+
+        dist = distance_between_cells(init_locator_bot, picked)
+        TOTAL_COST += COST * dist
+        init_locator_bot = picked
         
         ping = type1_detactor(picked)
 
 print("we won")
+print(TOTAL_COST)
 
 for i in range(GRID_SIZE):
     print(grid[i])
