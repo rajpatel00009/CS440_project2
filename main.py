@@ -1,7 +1,7 @@
 import random
 import math
 
-GRID_SIZE = 10
+GRID_SIZE = 3
 
 K = 5 # radius for type a
 A = 2 # alpha value for type b
@@ -13,7 +13,7 @@ possible_cells = []
 impossible_cells = []
 
 cells_to_probs = {
-    (i, j): 1/(GRID_SIZE)
+    (i, j): 1/(GRID_SIZE**2)
     for i in range(GRID_SIZE)
     for j in range(GRID_SIZE)
 }
@@ -28,7 +28,7 @@ def euclidean_distance(cell1, cell2):
     r1, c1 = cell1
     r2, c2 = cell2
 
-    return math.sqrt((r2 - r1)^2 + (c2 - c1)^2)
+    return math.sqrt((r2 - r1)**2 + (c2 - c1)**2)
 
 # this detector will ping when the bot we are looking for is in radius of K 
 def type1_detector(curr_locator_bot):
@@ -59,26 +59,27 @@ def type1_detector(curr_locator_bot):
     
     return (-1, cells)
 
-def count_probability(curr_cell):
-    temp_dict = {}
+def count_probability(curr_cell, result):
 
-    c1, r1 = curr_cell
-    for cell in cells_to_probs.values():
-        dis = euclidean_distance(cell, init_lost_bot)
-        raj = math.exp((0 - A)*(dis - 1))
-        temp_dict[cell] = raj
+    for cell in cells_to_probs:
+        dis = euclidean_distance(cell, curr_cell)
+        ping_prob = math.exp((0 - A)*(dis - 1))
+        if result == "PING":
+            likelihood = ping_prob
+        else:
+            likelihood = 1 - ping_prob
+
+            
+        cells_to_probs[cell] = likelihood
         
+    total = sum(cells_to_probs.values())
+
+    for cell in cells_to_probs:
+        cells_to_probs[cell] = cells_to_probs[cell]/total 
 
 
-
-
-
-def type2_probability(curr_cell):
-
-
-
-# this detector will ping with high prob. when the losted bot iis near by, 
-def type2_detector(curr_locator_bot):
+# # this detector will ping with high prob. when the losted bot iis near by, 
+# def type2_detector(curr_locator_bot):
 
 
 # intial grid with all open cells
@@ -162,6 +163,14 @@ while (ping[0] != 0):
 
 print("we won")
 print(TOTAL_COST)
+
+
+print('type 2 testing')
+
+result = "PING"
+raj = count_probability(init_locator_bot, result)
+print(cells_to_probs.values())
+
 
 for i in range(GRID_SIZE):
     print(grid[i])
