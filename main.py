@@ -2,7 +2,7 @@ from ipaddress import NetmaskValueError
 import random
 import math
 
-GRID_SIZE = 3
+GRID_SIZE = 30
 
 K = 5 # radius for type a
 A = 2 # alpha value for type b
@@ -82,14 +82,11 @@ def count_probability(curr_cell, result):
         cells_to_probs[cell] = cells_to_probs[cell]/total
     
 # find the nearset cell from the given list in case probability matched for type 2
-def nearest_cell(cell, list):
+def nearest_cell(cell, cells):
     return min(
-        list,
-        key=lambda c: (c[0] - cell[0])**2 +
-                      (c[1] - cell[1])**2
+        cells,
+        key=lambda c: distance_between_cells(cell, c)
     )
-
-
 # # this detector will ping with high prob. when the losted bot iis near by, 
 
 # def type2_detector(curr_locator_bot):
@@ -186,18 +183,20 @@ print('type 2 testing')
 if(init_locator_bot == init_lost_bot):
     print("FOUND")
     print("if you get error under this don't worry")
-else:
+
+
+while init_locator_bot != init_lost_bot:
+
     dist = euclidean_distance(init_locator_bot, init_lost_bot)
     ping_prob = math.exp(-A * (dist - 1))
     print(f'the prob is {ping_prob}')
 
+    TOTAL_COST += COST * 0.5
     rand_num = random.random()
     if(rand_num < ping_prob):
         result = 'PING'
     else:
         result = 'NO PING'
-
-while init_locator_bot != init_lost_bot:
 
     count_probability(init_locator_bot, result) 
     best_prob = max(cells_to_probs.values()) # the max probability
@@ -211,10 +210,12 @@ while init_locator_bot != init_lost_bot:
     else:
         best_cell = cells_to_probs[best_prob] # if only one, pick it
 
+    dist = distance_between_cells(init_locator_bot, best_cell)
+    TOTAL_COST += COST * dist 
     init_locator_bot = best_cell
 
 print('you won!!!!!')
-
+print(TOTAL_COST)
 
 # for the type one if k is 10 look in radius of 10 from current cell and if the device pings mark all cells in radius 10 possible. The move to nearest cell if multiple select random. Once you see any cell does not ping mark all the cells in radius impossible. If you move to next cell and cell pings mark the previous possible cells as impossible as losed bot is now in new radius.
 
