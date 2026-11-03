@@ -74,7 +74,6 @@ def count_probability(curr_cell, result):
         else:
             likelihood = 1 - ping_prob
 
-            
         cells_to_probs[cell] *= likelihood
         
     total = sum(cells_to_probs.values())
@@ -198,9 +197,10 @@ else:
     else:
         result = 'NO PING'
 
-if(result == 'PING'):
+while init_locator_bot != init_lost_bot:
+
     count_probability(init_locator_bot, result) 
-    best_prob = max(cells_to_probs) # the max probability
+    best_prob = max(cells_to_probs.values()) # the max probability
 
     best_cells = [] # cells having best probability
     for cell in cells_to_probs:
@@ -211,12 +211,9 @@ if(result == 'PING'):
     else:
         best_cell = cells_to_probs[best_prob] # if only one, pick it
 
+    init_locator_bot = best_cell
 
-print(cells_to_probs)
-
-
-for i in range(GRID_SIZE):
-    print(grid[i])
+print('you won!!!!!')
 
 
 # for the type one if k is 10 look in radius of 10 from current cell and if the device pings mark all cells in radius 10 possible. The move to nearest cell if multiple select random. Once you see any cell does not ping mark all the cells in radius impossible. If you move to next cell and cell pings mark the previous possible cells as impossible as losed bot is now in new radius.
