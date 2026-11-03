@@ -5,9 +5,9 @@ from socket import TCP_NOTSENT_LOWAT
 
 GRID_SIZE = 30
 
-K = 5 # radius for type a
+K = 10 # radius for type a
 A = 2 # alpha value for type b
-COST = 2 # cost per step
+COST = 1 # cost per step
 TOTAL_COST = 0
 
 
@@ -29,40 +29,11 @@ def distance_between_cells(cell1, cell2):
 
     return abs(r2 - r1) + abs(c2 - c1)
 
+def euclidean_distance(cell1, cell2):
+    r1, c1 = cell1
+    r2, c2 = cell2
 
-def calculate_score(curr_cell, candidate, possible_cells):
-
-    total = len(possible_cells)
-
-    if total == 0 or candidate == curr_cell:
-        return 0
-
-    inside = 0
-
-    for r, c in possible_cells:
-        if (abs(r - candidate[0]) <= K and
-            abs(c - candidate[1]) <= K):
-            inside += 1
-
-    outside = total - inside
-
-    # If the target is at the candidate, we immediately win.
-    if candidate in possible_cells:
-        inside -= 1
-
-    # Expected number of possibilities remaining
-    expected_remaining = (
-        inside**2 + outside**2
-    ) / total
-
-    expected_eliminated = total - expected_remaining
-
-    dist = distance_between_cells(curr_cell, candidate)
-
-    # Account for both movement and detector cost
-    score = expected_eliminated / (dist + 0.5)
-
-    return score
+    return math.sqrt((r2 - r1)**2 + (c2 - c1)**2)
 
 # this detector will ping when the bot we are looking for is in radius of K 
 def type1_detector(curr_locator_bot):
@@ -93,23 +64,29 @@ def type1_detector(curr_locator_bot):
     
     return (-1, cells)
 
+
 def find_edges(cell):
-    r1, c1 = cell
+    r, c = cell
     temp = []
-    if(c1 - (K - 1)) >= 0:
-        temp.append((r1, c1 - (K - 1)))
 
-    if(c1 + (K - 1)) < GRID_SIZE:
-        temp.append((r1, c1 + (K - 1)))
+    distances = [1, max(1, K // 2), max(1, K - 1)]
 
-    if(r1 - (K - 1)) >= 0:
-        temp.append((r1 - (K - 1), c1))
+    for d in distances:
+        directions = [
+            (0, -d),  # left
+            (0, d),   # right
+            (-d, 0),  # up
+            (d, 0)    # down
+        ]
 
-    if(r1 + (K - 1)) < GRID_SIZE:
-        temp.append((r1 + (K - 1), c1))
+        for dr, dc in directions:
+            new_r = r + dr
+            new_c = c + dc
+
+            if 0 <= new_r < GRID_SIZE and 0 <= new_c < GRID_SIZE:
+                temp.append((new_r, new_c))
 
     return temp
-
 
 def count_probability(curr_cell, result):
 
