@@ -1,3 +1,4 @@
+from ipaddress import NetmaskValueError
 import random
 import math
 
@@ -17,6 +18,7 @@ cells_to_probs = {
     for i in range(GRID_SIZE)
     for j in range(GRID_SIZE)
 }
+
 
 def distance_between_cells(cell1, cell2):
     r1, c1 = cell1
@@ -78,10 +80,19 @@ def count_probability(curr_cell, result):
     total = sum(cells_to_probs.values())
 
     for cell in cells_to_probs:
-        cells_to_probs[cell] = cells_to_probs[cell]/total 
+        cells_to_probs[cell] = cells_to_probs[cell]/total
+    
+# find the nearset cell from the given list in case probability matched for type 2
+def nearest_cell(cell, list):
+    return min(
+        list,
+        key=lambda c: (c[0] - cell[0])**2 +
+                      (c[1] - cell[1])**2
+    )
 
 
 # # this detector will ping with high prob. when the losted bot iis near by, 
+
 # def type2_detector(curr_locator_bot):
 
 
@@ -103,76 +114,105 @@ possible_cells = [
     for i in range(GRID_SIZE)
     for j in range(GRID_SIZE)
 ]
-ping = type1_detector(init_locator_bot)
 
-while (ping[0] != 0):
+
+
+
+# ping = type1_detector(init_locator_bot)
+
+# while (ping[0] != 0):
     
-    if init_locator_bot in possible_cells:
-        possible_cells.remove(init_locator_bot)
-    if(ping[0] == 1):
-        print('in range')
-        possible_cells_2 = ping[1]
-        possible_cells = list(set(possible_cells) & set(possible_cells_2)) # intersection of both lists 
+#     if init_locator_bot in possible_cells:
+#         possible_cells.remove(init_locator_bot)
+#     if(ping[0] == 1):
+#         print('in range')
+#         possible_cells_2 = ping[1]
+#         possible_cells = list(set(possible_cells) & set(possible_cells_2)) # intersection of both lists 
 
-        if not possible_cells:
-            print("No possible cells left")
-            break
-
-
-        min_dist = min(distance_between_cells(init_locator_bot, cell)
-            for cell in possible_cells
-        )
-
-        nearest_cells = [cell for cell in possible_cells
-            if distance_between_cells(init_locator_bot, cell) == min_dist
-        ]
-
-        picked = random.choice(nearest_cells)
+#         if not possible_cells:
+#             print("No possible cells left")
+#             break
 
 
-        possible_cells.remove(picked)
-        dist = distance_between_cells(init_locator_bot, picked)
-        TOTAL_COST += COST * dist
-        init_locator_bot = picked
+#         min_dist = min(distance_between_cells(init_locator_bot, cell)
+#             for cell in possible_cells
+#         )
 
-        ping = type1_detector(picked)
+#         nearest_cells = [cell for cell in possible_cells
+#             if distance_between_cells(init_locator_bot, cell) == min_dist
+#         ]
+
+#         picked = random.choice(nearest_cells)
+
+
+#         possible_cells.remove(picked)
+#         dist = distance_between_cells(init_locator_bot, picked)
+#         TOTAL_COST += COST * dist
+#         init_locator_bot = picked
+
+#         ping = type1_detector(picked)
         
-    else:
-        print('not in range')
-        impossible_cells.extend(ping[1])
-        possible_cells = [item for item in possible_cells if item not in (ping[1])] # remove the list of impossible cells from possible cells 
-        if not possible_cells:
-            print("No possible cells left")
-            break
+#     else:
+#         print('not in range')
+#         impossible_cells.extend(ping[1])
+#         possible_cells = [item for item in possible_cells if item not in (ping[1])] # remove the list of impossible cells from possible cells 
+#         if not possible_cells:
+#             print("No possible cells left")
+#             break
 
 
-        min_dist = min(distance_between_cells(init_locator_bot, cell)
-            for cell in possible_cells
-        )
+#         min_dist = min(distance_between_cells(init_locator_bot, cell)
+#             for cell in possible_cells
+#         )
 
-        nearest_cells = [cell for cell in possible_cells
-            if distance_between_cells(init_locator_bot, cell) == min_dist
-        ]
+#         nearest_cells = [cell for cell in possible_cells
+#             if distance_between_cells(init_locator_bot, cell) == min_dist
+#         ]
 
-        picked = random.choice(nearest_cells)
+#         picked = random.choice(nearest_cells)
 
-        possible_cells.remove(picked)
+#         possible_cells.remove(picked)
 
-        dist = distance_between_cells(init_locator_bot, picked)
-        TOTAL_COST += COST * dist
-        init_locator_bot = picked
+#         dist = distance_between_cells(init_locator_bot, picked)
+#         TOTAL_COST += COST * dist
+#         init_locator_bot = picked
         
-        ping = type1_detector(picked)
+#         ping = type1_detector(picked)
 
-print("we won")
-print(TOTAL_COST)
-
+# print("we won")
+# print(TOTAL_COST)
 
 print('type 2 testing')
 
-result = "PING"
-raj = count_probability(init_locator_bot, result)
-print(cells_to_probs.values())
+if(init_locator_bot == init_lost_bot):
+    print("FOUND")
+    print("if you get error under this don't worry")
+else:
+    dist = euclidean_distance(init_locator_bot, init_lost_bot)
+    ping_prob = math.exp(-A * (dist - 1))
+    print(f'the prob is {ping_prob}')
+
+    rand_num = random.random()
+    if(rand_num < ping_prob):
+        result = 'PING'
+    else:
+        result = 'NO PING'
+
+if(result == 'PING'):
+    count_probability(init_locator_bot, result) 
+    best_prob = max(cells_to_probs) # the max probability
+
+    best_cells = [] # cells having best probability
+    for cell in cells_to_probs:
+        if(cells_to_probs[cell] == best_prob):
+            best_cells.append(cell)
+    if(best_cells):
+        best_cell = nearest_cell(init_locator_bot, best_cells)# pick the closest cell
+    else:
+        best_cell = cells_to_probs[best_prob] # if only one, pick it
+
+
+print(cells_to_probs)
 
 
 for i in range(GRID_SIZE):
