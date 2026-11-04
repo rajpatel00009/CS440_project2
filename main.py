@@ -475,10 +475,10 @@ for n in range(10):
         total_impr_type2 += run_type2_improved(init_locator_bot)
     
     print(f'total regular type1   {total_regular_type1/100}')
-    print(f'total improved type1  {total_impr_type1/100}')
+    print(f'total improved type2  {total_impr_type1/100}')
 
     print(f'total regular type1   {total_regular_type2/100}')
-    print(f'total improved type1  {total_impr_type2/100}\n')
+    print(f'total improved type2  {total_impr_type2/100}\n')
 
 
     regular_type1_results.append(total_regular_type1/100)
