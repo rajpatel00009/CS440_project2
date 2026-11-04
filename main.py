@@ -2,7 +2,8 @@ from ipaddress import NetmaskValueError
 import random
 import math
 from socket import TCP_NOTSENT_LOWAT
-import statistics
+import random
+import matplotlib.pyplot as plt
 
 
 GRID_SIZE = 30
@@ -220,8 +221,7 @@ def run_type1(init_locator_bot):
 def run_type2(init_locator_bot):
     global TOTAL_COST
     if(init_locator_bot == init_lost_bot):
-        print("FOUND")
-        print("if you get error under this don't worry")
+        return TOTAL_COST
 
 
     while init_locator_bot != init_lost_bot:
@@ -357,9 +357,7 @@ def run_type2_improved(init_locator_bot):
 
     global TOTAL_COST
     if(init_locator_bot == init_lost_bot):
-        print("FOUND")
-        print("if you get error under this don't worry")
-
+        return TOTAL_COST
     while init_locator_bot != init_lost_bot:
 
         dist = euclidean_distance(init_locator_bot, init_lost_bot)
@@ -400,21 +398,31 @@ def run_type2_improved(init_locator_bot):
 # run_type1(init_locator_bot)
 # run_type2(init_locator_bot)
 
+regular_type1_results = 0
+improved_type1_results = 0
+regular_type2_results = 0
+improved_type2_results = 0
+
+
 for n in range(10):
 
-    init_locator_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
-    init_lost_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+    total_regular_type1 = 0
+    total_impr_type1 = 0
+    total_regular_type2 = 0
+    total_impr_type2 = 0
 
-    r1, c1 = init_locator_bot
-    r2, c2 = init_lost_bot
-    grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-
-    grid[r1][c1] = 'b'
-    grid[r2][c2] = 'l'
-
-    avg = 0
-    sum_1 = 0
     for i in range(100):
+
+        init_locator_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+        init_lost_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+
+        r1, c1 = init_locator_bot
+        r2, c2 = init_lost_bot
+        grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+
+        grid[r1][c1] = 'b'
+        grid[r2][c2] = 'l'
+
         cells_to_probs = {
             (i, j): 1/(GRID_SIZE**2)
             for i in range(GRID_SIZE)
@@ -423,12 +431,17 @@ for n in range(10):
         TOTAL_COST = 0
         possible_cells = []
         impossible_cells = []
-        sum_1 += run_type2(init_locator_bot)
-    print(f'iteration {n}, {sum_1/100}')
+        total_regular_type1 += run_type1(init_locator_bot)
 
-    avg = 0
-    sum2 = 0
-    for i in range(100):
+        init_locator_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+        init_lost_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+
+        r1, c1 = init_locator_bot
+        r2, c2 = init_lost_bot
+        grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+
+        grid[r1][c1] = 'b'
+        grid[r2][c2] = 'l'
         cells_to_probs = {
             (i, j): 1/(GRID_SIZE**2)
             for i in range(GRID_SIZE)
@@ -437,5 +450,68 @@ for n in range(10):
         TOTAL_COST = 0
         possible_cells = []
         impossible_cells = []
-        sum2 += run_type2_improved(init_locator_bot)
-    print(f'iteration {n}, {sum2/100}\n')
+        total_impr_type1 += run_type1_improved(init_locator_bot)
+
+        cells_to_probs = {
+            (i, j): 1/(GRID_SIZE**2)
+            for i in range(GRID_SIZE)
+            for j in range(GRID_SIZE)
+        }
+        TOTAL_COST = 0
+        possible_cells = []
+        impossible_cells = []
+        total_regular_type2 += run_type2(init_locator_bot)
+
+
+
+        cells_to_probs = {
+            (i, j): 1/(GRID_SIZE**2)
+            for i in range(GRID_SIZE)
+            for j in range(GRID_SIZE)
+        }
+        TOTAL_COST = 0
+        possible_cells = []
+        impossible_cells = []
+        total_impr_type2 += run_type2_improved(init_locator_bot)
+    
+    print(f'total regular type1   {total_regular_type1/100}')
+    print(f'total improved type1  {total_impr_type1/100}')
+
+    print(f'total regular type1   {total_regular_type2/100}')
+    print(f'total improved type1  {total_impr_type2/100}\n')
+
+
+    regular_type1_results += total_regular_type1/100
+    improved_type1_results += total_impr_type1/100
+    regular_type2_results += total_regular_type2/100
+    improved_type2_results += total_impr_type2/100
+
+
+
+experiments = range(1, 11)
+
+plt.figure(figsize=(10, 6))
+
+plt.plot(experiments, regular_type1_results,
+         marker='o', label='Regular Type 1')
+
+plt.plot(experiments, improved_type1_results,
+         marker='s', label='Improved Type 1')
+
+plt.plot(experiments, regular_type2_results,
+         marker='^', label='Regular Type 2')
+
+plt.plot(experiments, improved_type2_results,
+         marker='D', label='Improved Type 2')
+
+plt.xlabel('Experiment Number', fontsize=12)
+plt.ylabel('Average Total Cost', fontsize=12)
+
+plt.title('Comparison of Regular and Improved Algorithms', fontsize=14)
+
+plt.xticks(range(1, 11))
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+
+plt.tight_layout()
+plt.show()
