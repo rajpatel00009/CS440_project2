@@ -22,7 +22,6 @@ cells_to_probs = {
     for j in range(GRID_SIZE)
 }
 
-
 def distance_between_cells(cell1, cell2):
     r1, c1 = cell1
     r2, c2 = cell2
@@ -131,12 +130,16 @@ def calculate_score(curr_cell, candidate, possible_cells):
     if(total == 0):
         return 0
 
-    expected_eliminated = (2 * inside * outside) / total
+    if candidate in possible_cells:
+        expected_eliminated = total - (
+            (inside - 1)**2 + outside**2
+        ) / total
+    else:
+        expected_eliminated = (2 * inside * outside) / total
     dist = distance_between_cells(curr_cell, candidate)
     score = expected_eliminated / (dist + 0.5)
 
     return score
-
 
 def run_type1(init_locator_bot):
     global impossible_cells
@@ -251,7 +254,7 @@ def run_type2(init_locator_bot):
     print('you won!!!!!')
     print(TOTAL_COST)
 
-def run_type1_better(init_locator_bot):
+def run_type1_improved(init_locator_bot):
     global impossible_cells
     global TOTAL_COST
 
@@ -379,5 +382,5 @@ for n in range(10):
         TOTAL_COST = 0
         possible_cells = []
         impossible_cells = []
-        sum2 += run_type1_better(init_locator_bot)
+        sum2 += run_type1_improved(init_locator_bot)
     print(f'iteration {n}, {sum2/100}\n')
