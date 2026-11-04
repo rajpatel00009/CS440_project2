@@ -398,10 +398,10 @@ def run_type2_improved(init_locator_bot):
 # run_type1(init_locator_bot)
 # run_type2(init_locator_bot)
 
-regular_type1_results = 0
-improved_type1_results = 0
-regular_type2_results = 0
-improved_type2_results = 0
+regular_type1_results = []
+improved_type1_results = []
+regular_type2_results = []
+improved_type2_results = []
 
 
 for n in range(10):
@@ -481,10 +481,10 @@ for n in range(10):
     print(f'total improved type1  {total_impr_type2/100}\n')
 
 
-    regular_type1_results += total_regular_type1/100
-    improved_type1_results += total_impr_type1/100
-    regular_type2_results += total_regular_type2/100
-    improved_type2_results += total_impr_type2/100
+    regular_type1_results.append(total_regular_type1/100)
+    improved_type1_results.append(total_impr_type1/100)
+    regular_type2_results.append(total_regular_type2/100)
+    improved_type2_results.append(total_impr_type2/100)
 
 
 
