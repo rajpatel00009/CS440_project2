@@ -2,6 +2,8 @@ from ipaddress import NetmaskValueError
 import random
 import math
 from socket import TCP_NOTSENT_LOWAT
+import statistics
+
 
 GRID_SIZE = 30
 
@@ -215,7 +217,6 @@ def run_type1(init_locator_bot):
     
     return TOTAL_COST
 
-
 def run_type2(init_locator_bot):
     global TOTAL_COST
     if(init_locator_bot == init_lost_bot):
@@ -248,11 +249,11 @@ def run_type2(init_locator_bot):
             best_cell = cells_to_probs[best_prob] # if only one, pick it
 
         dist = distance_between_cells(init_locator_bot, best_cell)
+
         TOTAL_COST += COST * dist 
         init_locator_bot = best_cell
 
-    print('you won!!!!!')
-    print(TOTAL_COST)
+    return TOTAL_COST
 
 def run_type1_improved(init_locator_bot):
     global impossible_cells
@@ -349,6 +350,50 @@ def run_type1_improved(init_locator_bot):
     return TOTAL_COST
 
 
+# instead of traveling to the cell with high prob, travel to the one which is near and run the detector more than one time in the start so that we can have 
+#  better estimate in the start. ONce we have more data we can travel more, and we can do less detector operation 
+
+def run_type2_improved(init_locator_bot):
+
+    global TOTAL_COST
+    if(init_locator_bot == init_lost_bot):
+        print("FOUND")
+        print("if you get error under this don't worry")
+
+    while init_locator_bot != init_lost_bot:
+
+        dist = euclidean_distance(init_locator_bot, init_lost_bot)
+        ping_prob = math.exp(-A * (dist - 1))
+
+        TOTAL_COST += COST * 0.5
+        rand_num = random.random()
+        if(rand_num < ping_prob):
+            result = 'PING'
+        else:
+            result = 'NO PING'
+
+        weighted_prob = {}
+        for cell in cells_to_probs:
+            dis = distance_between_cells(init_locator_bot, cell)
+            weighted_prob[cell] = cells_to_probs[cell] / (dis+0.5)
+        
+        count_probability(init_locator_bot, result) 
+        best_prob = max(weighted_prob.values()) # the max probability
+
+        best_cells = [] # cells having best probability
+        for cell in weighted_prob:
+            if(weighted_prob[cell] == best_prob):
+                best_cells.append(cell)
+        if(best_cells):
+            best_cell = nearest_cell(init_locator_bot, best_cells) # pick the closest cell
+        else:
+            best_cell = weighted_prob[best_prob] # if only one, pick it
+
+        dist = distance_between_cells(init_locator_bot, best_cell)
+        TOTAL_COST += COST * dist 
+        init_locator_bot = best_cell
+
+    return TOTAL_COST
 
 # intial grid with all open cells
 
@@ -368,19 +413,29 @@ for n in range(10):
     grid[r2][c2] = 'l'
 
     avg = 0
-    sum = 0
+    sum_1 = 0
     for i in range(100):
+        cells_to_probs = {
+            (i, j): 1/(GRID_SIZE**2)
+            for i in range(GRID_SIZE)
+            for j in range(GRID_SIZE)
+        }
         TOTAL_COST = 0
         possible_cells = []
         impossible_cells = []
-        sum += run_type1(init_locator_bot)
-    print(f'iteration {n}, {sum/100}')
+        sum_1 += run_type2(init_locator_bot)
+    print(f'iteration {n}, {sum_1/100}')
 
     avg = 0
     sum2 = 0
     for i in range(100):
+        cells_to_probs = {
+            (i, j): 1/(GRID_SIZE**2)
+            for i in range(GRID_SIZE)
+            for j in range(GRID_SIZE)
+        }
         TOTAL_COST = 0
         possible_cells = []
         impossible_cells = []
-        sum2 += run_type1_improved(init_locator_bot)
+        sum2 += run_type2_improved(init_locator_bot)
     print(f'iteration {n}, {sum2/100}\n')
