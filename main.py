@@ -1,11 +1,11 @@
 
 import random
 import math
-from socket import TCP_NOTSENT_LOWAT
 import random
 import matplotlib.pyplot as plt
+from collections import deque
 
-
+from grid_generator import setup_grid
 
 GRID_SIZE = 30
 
@@ -17,22 +17,46 @@ A = 3 # alpha value for type b
 COST = 1 # cost per step
 TOTAL_COST = 0
 
-i1 = 1
-i2 = 10
+i1 = 10
+i2 = 20
 
 
-grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-
+grid = setup_grid(GRID_SIZE)
 possible_cells = []
 impossible_cells = []
 
-cells_to_probs = {
-    (i, j): 1/(GRID_SIZE**2)
-    for i in range(GRID_SIZE)
-    for j in range(GRID_SIZE)
-}
+def open_positions():
+    return [(r, c) for r in range(GRID_SIZE) for c in range(GRID_SIZE)
+            if grid[r][c] != '*']
 
-# space between any 2 cells or how many steps we will need when moving from one to other cell
+def initial_probabilities():
+    cells = open_positions()
+    return {cell: 1 / len(cells) for cell in cells}
+
+
+cells_to_probs = initial_probabilities()
+
+_distance_cache = {}
+
+
+def get_path_distances(start):
+    if start not in _distance_cache:
+        distances = {start: 0}
+        queue = deque([start])
+        while queue:
+            r, c = queue.popleft()
+            for nr, nc in ((r - 1, c), (r + 1, c),
+                           (r, c - 1), (r, c + 1)):
+                if (0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE
+                        and grid[nr][nc] != '*'
+                        and (nr, nc) not in distances):
+                    distances[(nr, nc)] = distances[(r, c)] + 1
+                    queue.append((nr, nc))
+        _distance_cache[start] = distances
+    return _distance_cache[start]
+
+
+
 def distance_between_cells(cell1, cell2):
     r1, c1 = cell1
     r2, c2 = cell2
@@ -64,7 +88,7 @@ def type1_detector(curr_locator_bot):
     
     for i in range(min_row, max_row + 1):
         for j in range(min_col, max_col + 1):
-            if((i, j) not in impossible_cells):
+            if (grid[i][j] != '*') and ((i, j) not in impossible_cells):
                 cells.append((i, j))
 
     for cell in cells:
@@ -93,7 +117,7 @@ def find_edges(cell):
             new_r = r + dr
             new_c = c + dc
 
-            if 0 <= new_r < GRID_SIZE and 0 <= new_c < GRID_SIZE:
+            if (0 <= new_r < GRID_SIZE and 0 <= new_c < GRID_SIZE) and (grid[new_r][new_c] != '*'):
                 temp.append((new_r, new_c))
 
     return temp
@@ -154,6 +178,8 @@ def calculate_score(curr_cell, candidate, possible_cells):
     else:
         expected_eliminated = (2 * inside * outside) / total
     dist = distance_between_cells(curr_cell, candidate)
+    if math.isinf(dist):
+        return float('-inf')
     score = expected_eliminated / (dist + 0.5)
 
     return score
@@ -167,6 +193,7 @@ def run_type1(init_locator_bot):
         (i, j)
         for i in range(GRID_SIZE)
         for j in range(GRID_SIZE)
+        if grid[i][j] != '*'
     ]
 
 
@@ -276,6 +303,7 @@ def run_type1_improved(init_locator_bot):
         (i, j)
         for i in range(GRID_SIZE)
         for j in range(GRID_SIZE)
+        if grid[i][j] != '*'
     ]
     
     ping = type1_detector(init_locator_bot)
@@ -429,283 +457,259 @@ def run_type2_improved(init_locator_bot):
 # run_type2(init_locator_bot)
 
 
+if __name__ == "__main__":
+    results = {}
+    for K in K_values:
+        for A in A_values:
 
-results = {}
-for K in K_values:
-    for A in A_values:
-
-        regular_type1_results = []
-        improved_type1_results = []
-        regular_type2_results = []
-        improved_type2_results = []
-
-
-        for n in range(i1):
-
-            total_regular_type1 = 0
-            total_impr_type1 = 0
-            total_regular_type2 = 0
-            total_impr_type2 = 0
-
-            for i in range(i2):
-
-                init_locator_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
-                init_lost_bot = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
-
-                r1, c1 = init_locator_bot
-                r2, c2 = init_lost_bot
-
-                grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-
-                grid[r1][c1] = 'b'
-                grid[r2][c2] = 'l'
-
-                cells_to_probs = {
-                    (i, j): 1/(GRID_SIZE**2)
-                    for i in range(GRID_SIZE)
-                    for j in range(GRID_SIZE)
-                }
-                TOTAL_COST = 0
-                possible_cells = []
-                impossible_cells = []
-                total_regular_type1 += run_type1(init_locator_bot)
-
-                # Improved Type 1
-                grid = [['*' for _ in range(GRID_SIZE)]
-                        for _ in range(GRID_SIZE)]
-
-                grid[r1][c1] = 'b'
-                grid[r2][c2] = 'l'
-                cells_to_probs = {
-                    (i, j): 1/(GRID_SIZE**2)
-                    for i in range(GRID_SIZE)
-                    for j in range(GRID_SIZE)
-                }
-                TOTAL_COST = 0
-                impossible_cells = []
-                total_impr_type1 += run_type1_improved(init_locator_bot)
-
-                cells_to_probs = {
-                    (i, j): 1/(GRID_SIZE**2)
-                    for i in range(GRID_SIZE)
-                    for j in range(GRID_SIZE)
-                }
-                TOTAL_COST = 0
-            
-                total_regular_type2 += run_type2(init_locator_bot)
-
-
-
-                cells_to_probs = {
-                    (i, j): 1/(GRID_SIZE**2)
-                    for i in range(GRID_SIZE)
-                    for j in range(GRID_SIZE)
-                }
-                TOTAL_COST = 0
-
-                total_impr_type2 += run_type2_improved(init_locator_bot)
-
-            regular_type1_results.append(total_regular_type1/i2)
-            improved_type1_results.append(total_impr_type1/i2)
-            regular_type2_results.append(total_regular_type2/i2)
-            improved_type2_results.append(total_impr_type2/i2)
-
-        results[(K, A)]= {
-            'Regular Type 1': sum(regular_type1_results)/i1,
-            'Improved Type 1': sum(improved_type1_results)/i1,
-            'Regular Type 2': sum(regular_type2_results)/i1,
-            'Improved Type 2': sum(improved_type2_results)/i1
-        }
-
-        print(f'K = {K}, and A = {A}')
-        print(results[(K, A)])
-# Extract results from existing dictionary
-
-regular1 = [
-    sum(results[(k, a)]['Regular Type 1']
-        for a in A_values) / len(A_values)
-    for k in K_values
-]
-
-improved1 = [
-    sum(results[(k, a)]['Improved Type 1']
-        for a in A_values) / len(A_values)
-    for k in K_values
-]
+            regular_type1_results = []
+            improved_type1_results = []
+            regular_type2_results = []
+            improved_type2_results = []
+
+
+            for n in range(i1):
+
+                total_regular_type1 = 0
+                total_impr_type1 = 0
+                total_regular_type2 = 0
+                total_impr_type2 = 0
 
-regular2 = [
-    sum(results[(k, a)]['Regular Type 2']
-        for k in K_values) / len(K_values)
-    for a in A_values
-]
+                for i in range(i2):
 
-improved2 = [
-    sum(results[(k, a)]['Improved Type 2']
-        for k in K_values) / len(K_values)
-    for a in A_values
-]
+                    grid = setup_grid(GRID_SIZE)
+                    _distance_cache.clear()
+                    init_locator_bot, init_lost_bot = random.sample(open_positions(), 2)
 
+                    r1, c1 = init_locator_bot
+                    r2, c2 = init_lost_bot
+
+                    grid[r1][c1] = 'b'
+                    grid[r2][c2] = 'l'
+
+                    cells_to_probs = initial_probabilities()
+                    TOTAL_COST = 0
+                    possible_cells = []
+                    impossible_cells = []
+                    total_regular_type1 += run_type1(init_locator_bot)
 
-# GRAPH 1: TYPE 1 COST VS K
+                    grid = [row[:] for row in grid]
+                    grid[r1][c1] = 'b'
+                    grid[r2][c2] = 'l'
+                    cells_to_probs = initial_probabilities()
+                    TOTAL_COST = 0
+                    impossible_cells = []
+                    total_impr_type1 += run_type1_improved(init_locator_bot)
 
-plt.figure(figsize=(10, 6))
-plt.plot(K_values, regular1, marker='o',
-         label='Regular Type 1')
-plt.plot(K_values, improved1, marker='s',
-         label='Improved Type 1')
+                    cells_to_probs = initial_probabilities()
+                    TOTAL_COST = 0
+                
+                    total_regular_type2 += run_type2(init_locator_bot)
 
-plt.xlabel('K (Detector Radius)')
-plt.ylabel('Average Discovery Cost')
-plt.title('Type 1: Average Discovery Cost vs K')
-plt.xticks(K_values)
-plt.legend()
-plt.grid(True, alpha=0.3)
 
-plt.tight_layout()
-plt.show()
 
+                    cells_to_probs = initial_probabilities()
+                    TOTAL_COST = 0
 
-# GRAPH 2: TYPE 2 COST VS ALPHA
+                    total_impr_type2 += run_type2_improved(init_locator_bot)
 
-plt.figure(figsize=(10, 6))
-plt.plot(A_values, regular2, marker='o',
-         label='Regular Type 2')
-plt.plot(A_values, improved2, marker='s',
-         label='Improved Type 2')
+                regular_type1_results.append(total_regular_type1/i2)
+                improved_type1_results.append(total_impr_type1/i2)
+                regular_type2_results.append(total_regular_type2/i2)
+                improved_type2_results.append(total_impr_type2/i2)
 
-plt.xlabel('Alpha')
-plt.ylabel('Average Discovery Cost')
-plt.title('Type 2: Average Discovery Cost vs Alpha')
-plt.xticks(A_values)
-plt.legend()
-plt.grid(True, alpha=0.3)
+            results[(K, A)]= {
+                'Regular Type 1': sum(regular_type1_results)/i1,
+                'Improved Type 1': sum(improved_type1_results)/i1,
+                'Regular Type 2': sum(regular_type2_results)/i1,
+                'Improved Type 2': sum(improved_type2_results)/i1
+            }
 
-plt.tight_layout()
-plt.show()
+            print(f'K = {K}, and A = {A}')
+            print(results[(K, A)])
+    # Extract results from existing dictionary
 
+    regular1 = [
+        sum(results[(k, a)]['Regular Type 1']
+            for a in A_values) / len(A_values)
+        for k in K_values
+    ]
 
-# GRAPH 3: TYPE 1 PERCENTAGE IMPROVEMENT
+    improved1 = [
+        sum(results[(k, a)]['Improved Type 1']
+            for a in A_values) / len(A_values)
+        for k in K_values
+    ]
 
-type1_percent = [
-    (r - i) / r * 100 if r > 0 else 0
-    for r, i in zip(regular1, improved1)
-]
+    regular2 = [
+        sum(results[(k, a)]['Regular Type 2']
+            for k in K_values) / len(K_values)
+        for a in A_values
+    ]
 
-plt.figure(figsize=(10, 6))
-plt.plot(K_values, type1_percent, marker='o')
-plt.axhline(0, linestyle='--')
+    improved2 = [
+        sum(results[(k, a)]['Improved Type 2']
+            for k in K_values) / len(K_values)
+        for a in A_values
+    ]
 
-plt.xlabel('K (Detector Radius)')
-plt.ylabel('Improvement (%)')
-plt.title('Type 1: Percentage Improvement vs K')
-plt.xticks(K_values)
-plt.grid(True, alpha=0.3)
 
-plt.tight_layout()
-plt.show()
+    # GRAPH 1: TYPE 1 COST VS K
 
+    plt.figure(figsize=(10, 6))
+    plt.plot(K_values, regular1, marker='o', label='Regular Type 1')
+    plt.plot(K_values, improved1, marker='s', label='Improved Type 1')
 
-# GRAPH 4: TYPE 2 PERCENTAGE IMPROVEMENT
+    plt.xlabel('K (Detector Radius)')
+    plt.ylabel('Average Discovery Cost')
+    plt.title('Type 1: Average Discovery Cost vs K')
+    plt.xticks(K_values)
+    plt.legend()
+    plt.grid(True, alpha=0.3)
 
-type2_percent = [
-    (r - i) / r * 100 if r > 0 else 0
-    for r, i in zip(regular2, improved2)
-]
+    plt.tight_layout()
+    plt.show()
 
-plt.figure(figsize=(10, 6))
-plt.plot(A_values, type2_percent, marker='s')
-plt.axhline(0, linestyle='--')
 
-plt.xlabel('Alpha')
-plt.ylabel('Improvement (%)')
-plt.title('Type 2: Percentage Improvement vs Alpha')
-plt.xticks(A_values)
-plt.grid(True, alpha=0.3)
+    # GRAPH 2: TYPE 2 COST VS ALPHA
 
-plt.tight_layout()
-plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(A_values, regular2, marker='o', label='Regular Type 2')
+    plt.plot(A_values, improved2, marker='s', label='Improved Type 2')
 
+    plt.xlabel('Alpha')
+    plt.ylabel('Average Discovery Cost')
+    plt.title('Type 2: Average Discovery Cost vs Alpha')
+    plt.xticks(A_values)
+    plt.legend()
+    plt.grid(True, alpha=0.3)
 
-# GRAPH 5: TYPE 1 COST SAVINGS
+    plt.tight_layout()
+    plt.show()
 
-type1_savings = [
-    r - i for r, i in zip(regular1, improved1)
-]
 
-plt.figure(figsize=(10, 6))
-plt.bar(K_values, type1_savings, width=0.7)
-plt.axhline(0, linestyle='--')
+    # GRAPH 3: TYPE 1 PERCENTAGE IMPROVEMENT
 
-plt.xlabel('K (Detector Radius)')
-plt.ylabel('Average Cost Saved')
-plt.title('Type 1: Cost Savings vs K')
-plt.xticks(K_values)
-plt.grid(axis='y', alpha=0.3)
+    type1_percent = [
+        (r - i) / r * 100 if r > 0 else 0
+        for r, i in zip(regular1, improved1)
+    ]
 
-plt.tight_layout()
-plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(K_values, type1_percent, marker='o')
+    plt.axhline(0, linestyle='--')
 
+    plt.xlabel('K (Detector Radius)')
+    plt.ylabel('Improvement (%)')
+    plt.title('Type 1: Percentage Improvement vs K')
+    plt.xticks(K_values)
+    plt.grid(True, alpha=0.3)
 
-# GRAPH 6: TYPE 2 COST SAVINGS
+    plt.tight_layout()
+    plt.show()
 
-type2_savings = [
-    r - i for r, i in zip(regular2, improved2)
-]
 
-plt.figure(figsize=(10, 6))
-plt.bar(range(len(A_values)), type2_savings)
-plt.axhline(0, linestyle='--')
+    # GRAPH 4: TYPE 2 PERCENTAGE IMPROVEMENT
 
-plt.xlabel('Alpha')
-plt.ylabel('Average Cost Saved')
-plt.title('Type 2: Cost Savings vs Alpha')
-plt.xticks(range(len(A_values)), A_values)
-plt.grid(axis='y', alpha=0.3)
+    type2_percent = [
+        (r - i) / r * 100 if r > 0 else 0
+        for r, i in zip(regular2, improved2)
+    ]
 
-plt.tight_layout()
-plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(A_values, type2_percent, marker='s')
+    plt.axhline(0, linestyle='--')
 
+    plt.xlabel('Alpha')
+    plt.ylabel('Improvement (%)')
+    plt.title('Type 2: Percentage Improvement vs Alpha')
+    plt.xticks(A_values)
+    plt.grid(True, alpha=0.3)
 
-# GRAPH 7: BEST ALGORITHM COMPARISON
+    plt.tight_layout()
+    plt.show()
 
-best_k_index = improved1.index(min(improved1))
-best_a_index = improved2.index(min(improved2))
 
-best_k = K_values[best_k_index]
-best_a = A_values[best_a_index]
+    # GRAPH 5: TYPE 1 COST SAVINGS
 
-labels = [
-    'Regular Type 1',
-    'Improved Type 1',
-    'Regular Type 2',
-    'Improved Type 2'
-]
+    type1_savings = [
+        r - i for r, i in zip(regular1, improved1)
+    ]
 
-costs = [
-    regular1[best_k_index],
-    improved1[best_k_index],
-    regular2[best_a_index],
-    improved2[best_a_index]
-]
+    plt.figure(figsize=(10, 6))
+    plt.bar(K_values, type1_savings, width=0.7)
+    plt.axhline(0, linestyle='--')
 
-plt.figure(figsize=(11, 6))
-bars = plt.bar(labels, costs)
+    plt.xlabel('K (Detector Radius)')
+    plt.ylabel('Average Cost Saved')
+    plt.title('Type 1: Cost Savings vs K')
+    plt.xticks(K_values)
+    plt.grid(axis='y', alpha=0.3)
 
-for bar, cost in zip(bars, costs):
-    plt.text(
-        bar.get_x() + bar.get_width() / 2,
-        cost,
-        f'{cost:.2f}',
-        ha='center',
-        va='bottom'
+    plt.tight_layout()
+    plt.show()
+
+
+    # GRAPH 6: TYPE 2 COST SAVINGS
+
+    type2_savings = [
+        r - i for r, i in zip(regular2, improved2)
+    ]
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(len(A_values)), type2_savings)
+    plt.axhline(0, linestyle='--')
+
+    plt.xlabel('Alpha')
+    plt.ylabel('Average Cost Saved')
+    plt.title('Type 2: Cost Savings vs Alpha')
+    plt.xticks(range(len(A_values)), A_values)
+    plt.grid(axis='y', alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+
+    # GRAPH 7: BEST ALGORITHM COMPARISON
+
+    best_k_index = improved1.index(min(improved1))
+    best_a_index = improved2.index(min(improved2))
+
+    best_k = K_values[best_k_index]
+    best_a = A_values[best_a_index]
+
+    labels = [
+        'Regular Type 1',
+        'Improved Type 1',
+        'Regular Type 2',
+        'Improved Type 2'
+    ]
+
+    costs = [
+        regular1[best_k_index],
+        improved1[best_k_index],
+        regular2[best_a_index],
+        improved2[best_a_index]
+    ]
+
+    plt.figure(figsize=(11, 6))
+    bars = plt.bar(labels, costs)
+
+    for bar, cost in zip(bars, costs):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            cost,
+            f'{cost:.2f}',
+            ha='center',
+            va='bottom'
+        )
+
+    plt.xlabel('Algorithm')
+    plt.ylabel('Average Discovery Cost')
+    plt.title(
+        f'Best Detector Comparison: K={best_k}, Alpha={best_a}'
     )
+    plt.grid(axis='y', alpha=0.3)
 
-plt.xlabel('Algorithm')
-plt.ylabel('Average Discovery Cost')
-plt.title(
-    f'Best Detector Comparison: K={best_k}, Alpha={best_a}'
-)
-plt.grid(axis='y', alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()

@@ -1,8 +1,7 @@
 import random
 
-GRID_SIZE = 10 
+GRID_SIZE = 30
 
-# intial grid with all open cells
 grid = [['*' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
 
 def reset_grid():
@@ -23,7 +22,10 @@ def update_dead_ends(dead_ends):
             if (opened_neighbors == 1) and (grid[grid_row][grid_column] == '.'):
                 dead_ends.append((grid_row, grid_column))
 
-def setup_grid():
+def setup_grid(size=30):
+    global GRID_SIZE
+    GRID_SIZE = size
+    reset_grid()
 
     # the first cell to open
     open_cell = (random.randint(1, GRID_SIZE - 2), random.randint(1, GRID_SIZE - 2))
@@ -98,7 +100,7 @@ def setup_grid():
             )
             if(open_count == 1): 
                 dead_ends.add(i)
-
+    return [row[:] for row in grid]
 # getting neighbots of given cell 
 def get_neighbors(pos):
     x, y = pos
