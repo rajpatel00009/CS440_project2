@@ -17,8 +17,8 @@ A = 3 # alpha value for type b
 COST = 1 # cost per step
 TOTAL_COST = 0
 
-i1 = 10
-i2 = 20
+i1 = 5
+i2 = 10
 
 
 grid = setup_grid(GRID_SIZE)
